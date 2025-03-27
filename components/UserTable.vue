@@ -16,15 +16,40 @@
     <table v-else class="users-table">
       <thead>
         <tr>
-          <th>Имя</th>
-          <th>Фамилия</th>
-          <th>Email</th>
-          <th>Статус</th>
-          <th>Дата создания</th>
+          <th @click="handleSort('name')" :class="{ sortable: true, active: sortField === 'name' }">
+            Имя
+            <span class="sort-icon" v-if="sortField === 'name'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </th>
+          <th @click="handleSort('surname')" :class="{ sortable: true, active: sortField === 'surname' }">
+            Фамилия
+            <span class="sort-icon" v-if="sortField === 'surname'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </th>
+          <th @click="handleSort('credentials.username')" :class="{ sortable: true, active: sortField === 'credentials.username' }">
+            Email
+            <span class="sort-icon" v-if="sortField === 'credentials.username'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </th>
+          <th @click="handleSort('active')" :class="{ sortable: true, active: sortField === 'active' }">
+            Статус
+            <span class="sort-icon" v-if="sortField === 'active'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </th>
+          <th @click="handleSort('created')" :class="{ sortable: true, active: sortField === 'created' }">
+            Дата создания
+            <span class="sort-icon" v-if="sortField === 'created'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="user in users" :key="user.credentials.username">
+        <tr v-for="user in sortedUsers" :key="user.credentials.username">
           <td>{{ user.name }}</td>
           <td>{{ user.surname }}</td>
           <td>{{ user.credentials.username }}</td>
@@ -41,12 +66,60 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { User } from '~/types'
 
-defineProps<{
+const route = useRoute()
+const router = useRouter()
+
+const props = defineProps<{
   users: User[]
   loading?: boolean
 }>()
+
+const sortField = ref(route.query.sortField?.toString() || 'name')
+const sortDirection = ref(route.query.sortDirection?.toString() || 'asc')
+
+// Функция для получения значения вложенного свойства объекта
+const getNestedValue = (obj: any, path: string) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj)
+}
+
+// Отсортированные пользователи
+const sortedUsers = computed(() => {
+  return [...props.users].sort((a, b) => {
+    const aValue = getNestedValue(a, sortField.value)
+    const bValue = getNestedValue(b, sortField.value)
+    
+    if (sortDirection.value === 'asc') {
+      return aValue > bValue ? 1 : -1
+    } else {
+      return aValue < bValue ? 1 : -1
+    }
+  })
+})
+
+// Обработчик сортировки
+const handleSort = (field: string) => {
+  if (sortField.value === field) {
+    // Если поле то же, меняем направление
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // Если поле новое, устанавливаем его и направление по умолчанию
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+
+  // Обновляем URL
+  router.replace({
+    query: {
+      ...route.query,
+      sortField: sortField.value,
+      sortDirection: sortDirection.value
+    }
+  })
+}
 
 defineEmits<{
   (e: 'reset-filters'): void
@@ -88,6 +161,28 @@ defineEmits<{
   tbody tr {
     &:hover {
       background-color: #f8f9fa;
+    }
+  }
+
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 1.5rem;
+
+    &:hover {
+      background-color: #f0f0f0;
+    }
+
+    &.active {
+      color: #007bff;
+    }
+
+    .sort-icon {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
     }
   }
 }
@@ -173,5 +268,10 @@ defineEmits<{
   .table-container {
     overflow-x: auto;
   }
+}
+
+// Анимация для сортировки
+tbody tr {
+  transition: all 0.2s ease-in-out;
 }
 </style>

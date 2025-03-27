@@ -51,9 +51,9 @@ const handleResetFilters = () => {
 onMounted(() => {
   // Применяем начальные фильтры
   usersStore.filterUsers({
-    search: '',
-    status: null,
-    date: null
+    search: route.query.search as string || '',
+    status: route.query.status as string || null,
+    date: route.query.date ? new Date(route.query.date as string) : null
   })
 })
 </script>
