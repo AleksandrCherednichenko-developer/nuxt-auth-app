@@ -6,29 +6,55 @@
     </header>
 
     <main class="page-content">
-      <FilterBlock @update:filters="handleFiltersUpdate" />
-      <UserTable :users="usersStore.filteredUsers" />
+      <FilterBlock 
+        @update:filters="handleFiltersUpdate"
+        ref="filterBlockRef"
+      />
+      <UserTable 
+        :users="usersStore.filteredUsers"
+        :loading="usersStore.loading"
+        @reset-filters="handleResetFilters"
+      />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useUsersStore } from '~/stores/users'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
+const filterBlockRef = ref()
 
 const handleLogout = () => {
   authStore.logout()
 }
 
-const handleFiltersUpdate = (filters: { status: string | null, date: Date | null }) => {
+const handleFiltersUpdate = (filters: { status: string | null, date: Date | null, search: string }) => {
   usersStore.filterUsers(filters)
+}
+
+const handleResetFilters = () => {
+  // Сбрасываем значения в компоненте FilterBlock
+  if (filterBlockRef.value) {
+    filterBlockRef.value.resetFilters()
+  }
+  // Сбрасываем фильтры в store
+  usersStore.resetFilters()
 }
 
 // Инициализируем список пользователей при монтировании компонента
 onMounted(() => {
-  usersStore.filterUsers({ status: null, date: null })
+  // Применяем начальные фильтры
+  usersStore.filterUsers({
+    search: route.query.search as string || '',
+    status: route.query.status as string || null,
+    date: route.query.date ? new Date(route.query.date as string) : null
+  })
 })
 </script>
 
