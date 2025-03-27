@@ -2,6 +2,16 @@
   <div class="filter-block">
     <div class="filters-wrapper">
       <div class="filter-group">
+        <label>Поиск:</label>
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Поиск..."
+          class="search-input"
+        />
+      </div>
+
+      <div class="filter-group">
         <label>Статус:</label>
         <BaseDropdown
           v-model="selectedStatus"
@@ -44,6 +54,10 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const statusOptions = [
   { label: 'Все', value: null },
@@ -51,37 +65,75 @@ const statusOptions = [
   { label: 'Неактивные', value: 'false' }
 ]
 
+const searchQuery = ref('')
 const selectedStatus = ref<string | null>(null)
 const selectedDate = ref<Date | null>(null)
 
 const emit = defineEmits<{
-  (e: 'update:filters', filters: { status: string | null, date: Date | null }): void
+  (e: 'update:filters', filters: { 
+    status: string | null, 
+    date: Date | null,
+    search: string 
+  }): void
 }>()
 
-// Отправляем начальное состояние фильтров
-onMounted(() => {
-  emit('update:filters', {
+// Функция для обновления URL
+const updateURL = (filters: { search: string, status: string | null, date: Date | null }) => {
+  router.replace({
+    query: {
+      ...route.query,
+      search: filters.search || undefined,
+      status: filters.status || undefined,
+      date: filters.date ? filters.date.toISOString() : undefined
+    }
+  })
+}
+
+// Отслеживаем изменения фильтров
+watch([searchQuery, selectedStatus, selectedDate], () => {
+  const filters = {
+    search: searchQuery.value,
     status: selectedStatus.value,
     date: selectedDate.value
-  })
+  }
+  
+  emit('update:filters', filters)
+  updateURL(filters)
 })
 
-watch([selectedStatus, selectedDate], () => {
-  emit('update:filters', {
-    status: selectedStatus.value,
-    date: selectedDate.value
-  })
+// При монтировании восстанавливаем фильтры из URL если они есть
+onMounted(() => {
+  if (Object.keys(route.query).length) {
+    const { search, status, date } = route.query
+    
+    searchQuery.value = search as string || ''
+    selectedStatus.value = status as string || null
+    selectedDate.value = date ? new Date(date as string) : null
+
+    emit('update:filters', {
+      search: searchQuery.value,
+      status: selectedStatus.value,
+      date: selectedDate.value
+    })
+  }
 })
 
 const hasActiveFilters = computed(() => {
-  return selectedStatus.value !== null || selectedDate.value !== null
+  return selectedStatus.value !== null || 
+         selectedDate.value !== null ||
+         searchQuery.value !== ''
 })
 
 const resetFilters = () => {
+  searchQuery.value = ''
   selectedStatus.value = null
   selectedDate.value = null
   
+  // При сбросе очищаем параметры в URL
+  router.replace({ query: {} })
+  
   emit('update:filters', {
+    search: '',
     status: null,
     date: null
   })
@@ -231,5 +283,31 @@ defineExpose({
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-input {
+  height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
+  background: white;
+  color: #333;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  
+  &:hover {
+    border-color: #007bff;
+  }
+  
+  &:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    outline: none;
+  }
+
+  &::placeholder {
+    color: #999;
+  }
 }
 </style>

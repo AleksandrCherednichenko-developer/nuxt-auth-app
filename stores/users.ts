@@ -9,28 +9,31 @@ export const useUsersStore = defineStore('users', {
     loading: false,
     filters: {
       status: null as string | null,
-      date: null as Date | null
+      date: null as Date | null,
+      search: '' as string
     }
   }),
   
   actions: {
-    async filterUsers(filters: { status: string | null, date: Date | null }) {
+    filterUsers(filters: { status: string | null, date: Date | null, search: string }) {
       this.loading = true
       
       try {
-        // Имитируем задержку загрузки для демонстрации спиннера
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
         this.filters = filters
         
+        // Если все фильтры пустые - показываем все записи
+        if (!filters.search && !filters.status && !filters.date) {
+          this.filteredUsers = [...this.users]
+          return
+        }
+
         this.filteredUsers = this.users.filter(user => {
-          // Фильтр по статусу (null означает "все")
-          const statusMatch = filters.status === null || 
+          // Фильтр по статусу
+          const statusMatch = !filters.status || 
             String(user.active) === filters.status
 
-          // Фильтр по дате (null означает "без фильтра")
+          // Фильтр по дате
           const dateMatch = !filters.date || (() => {
-            // Преобразуем строку даты из формата "DD.MM.YYYY HH:mm:ss" в объект Date
             const [datePart] = user.created.split(' ')
             const [day, month, year] = datePart.split('.')
             const userDate = new Date(Number(year), Number(month) - 1, Number(day))
@@ -41,7 +44,18 @@ export const useUsersStore = defineStore('users', {
                    userDate.getFullYear() === filterDate.getFullYear()
           })()
 
-          return statusMatch && dateMatch
+          // Поиск по всем полям
+          const searchMatch = !filters.search || 
+            Object.values(user).some(value => {
+              if (typeof value === 'object') {
+                return Object.values(value).some(v => 
+                  String(v).toLowerCase().includes(filters.search.toLowerCase())
+                )
+              }
+              return String(value).toLowerCase().includes(filters.search.toLowerCase())
+            })
+
+          return statusMatch && dateMatch && searchMatch
         })
       } finally {
         this.loading = false
@@ -51,9 +65,9 @@ export const useUsersStore = defineStore('users', {
     resetFilters() {
       this.filters = {
         status: null,
-        date: null
+        date: null,
+        search: ''
       }
-      // Сбрасываем к исходному списку
       this.filteredUsers = [...this.users]
     }
   }

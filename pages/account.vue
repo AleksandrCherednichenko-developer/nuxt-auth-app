@@ -20,10 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useUsersStore } from '~/stores/users'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
 const filterBlockRef = ref()
@@ -32,7 +34,7 @@ const handleLogout = () => {
   authStore.logout()
 }
 
-const handleFiltersUpdate = (filters: { status: string | null, date: Date | null }) => {
+const handleFiltersUpdate = (filters: { status: string | null, date: Date | null, search: string }) => {
   usersStore.filterUsers(filters)
 }
 
@@ -44,6 +46,16 @@ const handleResetFilters = () => {
   // Сбрасываем фильтры в store
   usersStore.resetFilters()
 }
+
+// Инициализируем список пользователей при монтировании компонента
+onMounted(() => {
+  // Применяем начальные фильтры
+  usersStore.filterUsers({
+    search: '',
+    status: null,
+    date: null
+  })
+})
 </script>
 
 <style lang="scss" scoped>

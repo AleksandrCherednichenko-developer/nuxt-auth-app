@@ -7,9 +7,8 @@
 
     <!-- Сообщение при отсутствии данных -->
     <div v-else-if="!users.length" class="no-data">
-      <icon-search-not-found />
       <p>По вашему запросу ничего не найдено</p>
-      <button class="reset-btn" @click="$emit('reset-filters')">
+      <button class="btn btn-reset" @click="$emit('reset-filters')">
         Сбросить фильтры
       </button>
     </div>
@@ -138,18 +137,11 @@ defineEmits<{
   padding: 2rem;
   color: #666;
 
-  svg {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 1rem;
-    color: #999;
-  }
-
   p {
     margin: 0.5rem 0;
   }
 
-  .reset-btn {
+  .btn-reset {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
     background: #007bff;
