@@ -22,8 +22,17 @@ export const useUsersStore = defineStore('users', {
           String(user.active) === filters.status
 
         // Фильтр по дате (null означает "без фильтра")
-        const dateMatch = !filters.date || 
-          new Date(user.created).toDateString() === filters.date.toDateString()
+        const dateMatch = !filters.date || (() => {
+          // Преобразуем строку даты из формата "DD.MM.YYYY HH:mm:ss" в объект Date
+          const [datePart] = user.created.split(' ')
+          const [day, month, year] = datePart.split('.')
+          const userDate = new Date(Number(year), Number(month) - 1, Number(day))
+          const filterDate = filters.date as Date
+          
+          return userDate.getDate() === filterDate.getDate() &&
+                 userDate.getMonth() === filterDate.getMonth() &&
+                 userDate.getFullYear() === filterDate.getFullYear()
+        })()
 
         return statusMatch && dateMatch
       })

@@ -15,13 +15,13 @@
         <Datepicker
           v-model="selectedDate"
           :enable-time-picker="false"
+          format="dd.MM.yyyy"
           locale="ru"
           placeholder="Выберите дату"
           :clearable="true"
           class="filter-input"
           textInput
           autoApply
-          :format="{ month: 'long', day: 'numeric', year: 'numeric' }"
         />
       </div>
     </div>
