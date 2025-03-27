@@ -6,17 +6,27 @@
     </header>
 
     <main class="page-content">
-      <FilterBlock @update:filters="handleFiltersUpdate" />
-      <UserTable :users="usersStore.filteredUsers" />
+      <FilterBlock 
+        @update:filters="handleFiltersUpdate"
+        ref="filterBlockRef"
+      />
+      <UserTable 
+        :users="usersStore.filteredUsers"
+        :loading="usersStore.loading"
+        @reset-filters="handleResetFilters"
+      />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useUsersStore } from '~/stores/users'
 
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
+const filterBlockRef = ref()
 
 const handleLogout = () => {
   authStore.logout()
@@ -26,10 +36,14 @@ const handleFiltersUpdate = (filters: { status: string | null, date: Date | null
   usersStore.filterUsers(filters)
 }
 
-// Инициализируем список пользователей при монтировании компонента
-onMounted(() => {
-  usersStore.filterUsers({ status: null, date: null })
-})
+const handleResetFilters = () => {
+  // Сбрасываем значения в компоненте FilterBlock
+  if (filterBlockRef.value) {
+    filterBlockRef.value.resetFilters()
+  }
+  // Сбрасываем фильтры в store
+  usersStore.resetFilters()
+}
 </script>
 
 <style lang="scss" scoped>
